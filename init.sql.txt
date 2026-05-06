@@ -1,0 +1,59 @@
+-- 创建数据库（如果不存在）
+CREATE DATABASE IF NOT EXISTS kindergarten_system
+DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+USE kindergarten_system;
+
+-- 幼儿信息表
+CREATE TABLE children (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    class_name VARCHAR(50),
+    enrollment_date DATE,
+    photo_path VARCHAR(255) COMMENT '幼儿照片路径'
+);
+
+-- 家长信息表（支持多家长绑定同一幼儿）
+CREATE TABLE parents (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    phone VARCHAR(20),
+    relation VARCHAR(20) COMMENT '父亲/母亲/爷爷/奶奶等',
+    child_id INT NOT NULL,
+    face_encoding BLOB COMMENT '人脸特征向量（LBPH 模型的标签或特征）',
+    face_photo_path VARCHAR(255) COMMENT '家长人脸照片路径',
+    FOREIGN KEY (child_id) REFERENCES children(id) ON DELETE CASCADE
+);
+
+-- 接送记录表
+CREATE TABLE pickup_records (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    parent_id INT NOT NULL,
+    child_id INT NOT NULL,
+    verify_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    result VARCHAR(20) COMMENT 'success/failed',
+    photo_path VARCHAR(255) COMMENT '抓拍照片路径',
+    FOREIGN KEY (parent_id) REFERENCES parents(id),
+    FOREIGN KEY (child_id) REFERENCES children(id)
+);
+
+-- 陌生人预警表
+CREATE TABLE stranger_logs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    detect_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    photo_path VARCHAR(255)
+);
+
+-- 系统设置表（可选）
+CREATE TABLE system_settings (
+    key_name VARCHAR(50) PRIMARY KEY,
+    value_str VARCHAR(255),
+    value_int INT,
+    description VARCHAR(255)
+);
+
+-- 初始化默认设置
+INSERT INTO system_settings (key_name, value_int, description) VALUES
+('camera_index', 0, '摄像头索引'),
+('recognition_threshold', 80, '人脸识别阈值（confidence < 阈值认为匹配）'),
+('peak_mode_threshold', 100, '高峰模式下的临时阈值');
